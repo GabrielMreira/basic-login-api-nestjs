@@ -1,10 +1,12 @@
 /* eslint-disable prettier/prettier */
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { Repository } from 'typeorm';;
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreatUserDTO } from './dto/create-user.dto';
 import { UpdateUserDTO } from './dto/update-user.dto';
 import { Users } from './entities/users.entity';
+import { GetUserDTO } from './dto/get-user.dto';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UserService {
@@ -34,4 +36,18 @@ export class UserService {
     this.UserRepository.delete(id);
     return this.getAll();
   }
+
+  async getByLogin(getUserDTO: GetUserDTO) {
+    const user = await this.UserRepository.findOneBy({email: getUserDTO.email});
+    if(!user)
+      throw new UnauthorizedException('Email ou senha incorretos')
+
+    try {
+      if(bcrypt.compare(getUserDTO.password, user.password))
+        return user;  
+    } catch (e) {
+      throw new UnauthorizedException('Email ou senha incorretos')
+    }
+  }
+
 }
